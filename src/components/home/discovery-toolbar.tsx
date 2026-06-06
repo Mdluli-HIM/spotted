@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -8,7 +8,7 @@ import {
   Navigation,
   RotateCcw,
   Search,
-  Sparkles,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 
@@ -48,34 +48,62 @@ export function DiscoveryToolbar({
     );
   }, [areaQuery]);
 
-  function toggleFilter(filter: OpenFilter) {
-    setOpenFilter((current) => {
-      const nextFilter = current === filter ? null : filter;
-
-      if (nextFilter !== "area") {
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        toolbarRef.current &&
+        !toolbarRef.current.contains(event.target as Node)
+      ) {
+        setOpenFilter(null);
         setAreaQuery("");
       }
+    }
 
-      return nextFilter;
-    });
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setOpenFilter(null);
+        setAreaQuery("");
+      }
+    }
+
+    window.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  function toggleFilter(filter: Exclude<OpenFilter, null>) {
+    const nextFilter = openFilter === filter ? null : filter;
+
+    setOpenFilter(nextFilter);
+
+    if (nextFilter !== "area") {
+      setAreaQuery("");
+    }
+  }
+
+  function closeFilters() {
+    setOpenFilter(null);
+    setAreaQuery("");
   }
 
   function selectMood(mood: string) {
     onMoodChange(mood);
-    setOpenFilter(null);
+    closeFilters();
   }
 
   function selectArea(area: string) {
     onAreaChange(area);
-    setAreaQuery("");
-    setOpenFilter(null);
+    closeFilters();
   }
 
   function clearFilters() {
     onMoodChange("All");
     onAreaChange("All areas");
-    setAreaQuery("");
-    setOpenFilter(null);
+    closeFilters();
   }
 
   return (
@@ -83,6 +111,15 @@ export function DiscoveryToolbar({
       ref={toolbarRef}
       className="relative z-30 mt-9 flex flex-wrap items-center gap-2"
     >
+      {openFilter && (
+        <button
+          type="button"
+          aria-label="Close filters"
+          onClick={closeFilters}
+          className="fixed inset-0 z-40 bg-black/15 backdrop-blur-[1px] sm:hidden"
+        />
+      )}
+
       <div className="relative">
         <button
           type="button"
@@ -94,7 +131,7 @@ export function DiscoveryToolbar({
               : "bg-[#f4f4f2] text-black hover:bg-[#eaeae6]"
           }`}
         >
-          <Sparkles size={14} />
+          <SlidersHorizontal size={14} />
 
           <span>
             Mood
@@ -112,10 +149,28 @@ export function DiscoveryToolbar({
         </button>
 
         {openFilter === "mood" && (
-          <div className="absolute left-0 top-[calc(100%+10px)] z-40 w-[310px] rounded-[26px] border border-black/[0.05] bg-[#fcfcfb] p-3 shadow-[0_24px_70px_rgba(30,27,20,0.14)] sm:w-[360px]">
-            <p className="px-2 pb-3 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-black/30">
-              What are you in the mood for?
-            </p>
+          <div className="fixed inset-x-0 bottom-0 z-50 max-h-[82dvh] w-full overflow-y-auto rounded-t-[30px] bg-[#fcfcfb] p-4 shadow-[0_-24px_70px_rgba(30,27,20,0.16)] sm:absolute sm:bottom-auto sm:left-0 sm:right-auto sm:top-[calc(100%+10px)] sm:max-h-none sm:w-[360px] sm:rounded-[26px] sm:border sm:border-black/[0.05] sm:p-3 sm:shadow-[0_24px_70px_rgba(30,27,20,0.14)]">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
+
+            <div className="flex items-center justify-between px-2 pb-4 pt-1">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/30">
+                  Choose your mood
+                </p>
+
+                <p className="mt-1 text-[12px] font-medium text-black/45">
+                  What feels right today?
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeFilters}
+                className="flex size-10 items-center justify-center rounded-full bg-[#f4f4f2] sm:hidden"
+              >
+                <X size={15} />
+              </button>
+            </div>
 
             <div className="grid grid-cols-2 gap-2">
               {moodFilters.map((mood) => {
@@ -126,7 +181,7 @@ export function DiscoveryToolbar({
                     key={mood}
                     type="button"
                     onClick={() => selectMood(mood)}
-                    className={`flex min-h-12 items-center justify-between gap-3 rounded-[17px] px-4 text-left text-[12px] font-semibold transition-colors ${
+                    className={`flex min-h-14 items-center justify-between gap-3 rounded-[18px] px-4 text-left text-[12px] font-semibold transition-colors ${
                       selected
                         ? "bg-[var(--accent)] text-black"
                         : "bg-[#f4f4f2] text-black/55 hover:bg-[#eaeae6] hover:text-black"
@@ -176,16 +231,37 @@ export function DiscoveryToolbar({
         </button>
 
         {openFilter === "area" && (
-          <div className="absolute left-0 top-[calc(100%+10px)] z-40 w-[320px] overflow-hidden rounded-[28px] border border-black/[0.05] bg-[#fcfcfb] p-3 shadow-[0_24px_70px_rgba(30,27,20,0.14)] sm:w-[380px]">
-            <div className="flex items-center gap-3 rounded-full bg-[#f4f4f2] px-4 py-3">
+          <div className="fixed inset-x-0 bottom-0 z-50 max-h-[86dvh] w-full overflow-hidden rounded-t-[30px] bg-[#fcfcfb] p-4 shadow-[0_-24px_70px_rgba(30,27,20,0.16)] sm:absolute sm:bottom-auto sm:left-0 sm:right-auto sm:top-[calc(100%+10px)] sm:max-h-none sm:w-[380px] sm:rounded-[28px] sm:border sm:border-black/[0.05] sm:p-3 sm:shadow-[0_24px_70px_rgba(30,27,20,0.14)]">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
+
+            <div className="mb-4 flex items-center justify-between px-1 sm:hidden">
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-black/30">
+                  Choose an area
+                </p>
+
+                <p className="mt-1 text-[12px] font-medium text-black/45">
+                  Search or explore nearby places.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeFilters}
+                className="flex size-10 items-center justify-center rounded-full bg-[#f4f4f2]"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-full bg-[#f4f4f2] px-4 py-3.5">
               <Search size={15} className="shrink-0 text-black/35" />
 
               <input
                 value={areaQuery}
                 onChange={(event) => setAreaQuery(event.target.value)}
-                autoFocus
                 placeholder="Search an area..."
-                className="w-full bg-transparent text-[12px] font-medium text-black outline-none placeholder:text-black/30"
+                className="w-full min-w-0 bg-transparent text-[13px] font-medium text-black outline-none placeholder:text-black/30"
               />
 
               {areaQuery && (
@@ -193,43 +269,39 @@ export function DiscoveryToolbar({
                   type="button"
                   aria-label="Clear area search"
                   onClick={() => setAreaQuery("")}
-                  className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white text-black"
+                  className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white text-black"
                 >
                   <X size={12} />
                 </button>
               )}
             </div>
 
-            <div className="no-scrollbar mt-3 max-h-[380px] overflow-y-auto">
+            <div className="no-scrollbar mt-3 max-h-[62dvh] overflow-y-auto pb-2 sm:max-h-[380px]">
               {areaQuery ? (
                 <div>
-                  <p className="px-2 pb-3 pt-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-black/30">
+                  <p className="px-2 pb-3 pt-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-black/30">
                     Search results
                   </p>
 
                   {filteredAreas.length > 0 ? (
                     <div className="space-y-2">
-                      {filteredAreas.map((area) => {
-                        const selected = activeArea === area;
-
-                        return (
-                          <AreaOption
-                            key={area}
-                            area={area}
-                            selected={selected}
-                            onSelect={() => selectArea(area)}
-                          />
-                        );
-                      })}
+                      {filteredAreas.map((area) => (
+                        <AreaOption
+                          key={area}
+                          area={area}
+                          selected={activeArea === area}
+                          onSelect={() => selectArea(area)}
+                        />
+                      ))}
                     </div>
                   ) : (
-                    <div className="rounded-[20px] bg-[#f4f4f2] p-5">
-                      <p className="text-[13px] font-semibold text-black">
+                    <div className="rounded-[22px] bg-[#f4f4f2] p-5">
+                      <p className="text-[14px] font-semibold text-black">
                         No area found.
                       </p>
 
                       <p className="mt-2 text-[11px] leading-relaxed text-black/40">
-                        We may not have places registered there yet.
+                        We may not have registered places there yet.
                       </p>
                     </div>
                   )}
@@ -239,20 +311,14 @@ export function DiscoveryToolbar({
                   <button
                     type="button"
                     onClick={() => selectArea("All areas")}
-                    className={`flex w-full items-center justify-between rounded-[19px] px-4 py-4 text-left transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-[20px] px-4 py-4 text-left transition-colors ${
                       activeArea === "All areas"
                         ? "bg-black text-white"
                         : "bg-[#f4f4f2] text-black hover:bg-[#eaeae6]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span
-                        className={`flex size-9 items-center justify-center rounded-full ${
-                          activeArea === "All areas"
-                            ? "bg-white text-black"
-                            : "bg-white text-black"
-                        }`}
-                      >
+                      <span className="flex size-10 items-center justify-center rounded-full bg-white text-black">
                         <Navigation size={14} />
                       </span>
 
@@ -296,7 +362,7 @@ export function DiscoveryToolbar({
                             key={area}
                             type="button"
                             onClick={() => selectArea(area)}
-                            className={`flex min-h-[74px] flex-col items-start justify-between rounded-[19px] p-4 text-left transition-colors ${
+                            className={`flex min-h-[82px] flex-col items-start justify-between rounded-[20px] p-4 text-left transition-colors ${
                               selected
                                 ? "bg-black text-white"
                                 : "bg-[#f4f4f2] text-black hover:bg-[#eaeae6]"
@@ -344,7 +410,7 @@ function AreaOption({ area, selected, onSelect }: AreaOptionProps) {
     <button
       type="button"
       onClick={onSelect}
-      className={`flex min-h-12 w-full items-center justify-between gap-3 rounded-[17px] px-4 text-left text-[12px] font-semibold transition-colors ${
+      className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-[18px] px-4 text-left text-[12px] font-semibold transition-colors ${
         selected
           ? "bg-black text-white"
           : "bg-[#f4f4f2] text-black/55 hover:bg-[#eaeae6] hover:text-black"
