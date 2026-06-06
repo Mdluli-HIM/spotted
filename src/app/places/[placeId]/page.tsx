@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { PlacePageResolver } from "@/components/place/place-page-resolver";
 import { places } from "@/data/places";
 import { siteConfig } from "@/lib/site";
+import { PageShell } from "@/components/layout/page-shell";
 
 type PlacePageProps = {
   params: Promise<{
@@ -63,10 +64,8 @@ export default async function PlacePage({ params }: PlacePageProps) {
   const { placeId } = await params;
 
   return (
-    <main className="min-h-dvh w-full overflow-x-hidden bg-white">
-      <div className="min-h-dvh w-full bg-white px-4 py-4 sm:px-8 sm:py-7 lg:px-16 lg:py-9 xl:px-20">
-        <PlacePageResolver placeId={placeId} />
-      </div>
-    </main>
+    <PageShell>
+      <PlacePageResolver placeId={placeId} />
+    </PageShell>
   );
 }

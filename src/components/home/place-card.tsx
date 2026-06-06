@@ -27,6 +27,7 @@ export function PlaceCard({
   onToggleSaved,
 }: PlaceCardProps) {
   const palette = getPlacePalette(place);
+  const isCommunityAdded = place.id.startsWith("community-");
 
   return (
     <motion.article
@@ -61,14 +62,22 @@ export function PlaceCard({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="flex max-h-[32px] flex-wrap gap-2 overflow-hidden">
-            {place.categories.slice(0, 2).map((category) => (
-              <span
-                key={category}
-                className="shrink-0 rounded-full bg-white/80 px-3 py-2 text-[10px] font-semibold text-black backdrop-blur-sm"
-              >
-                {category}
+            {isCommunityAdded && (
+              <span className="shrink-0 rounded-full bg-black px-3 py-2 text-[10px] font-semibold text-white">
+                Community
               </span>
-            ))}
+            )}
+
+            {place.categories
+              .slice(0, isCommunityAdded ? 1 : 2)
+              .map((category) => (
+                <span
+                  key={category}
+                  className="shrink-0 rounded-full bg-white/80 px-3 py-2 text-[10px] font-semibold text-black backdrop-blur-sm"
+                >
+                  {category}
+                </span>
+              ))}
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
@@ -107,6 +116,7 @@ export function PlaceCard({
             style={{ color: active ? "rgba(0,0,0,0.45)" : palette.accent }}
           >
             <MapPin size={12} />
+            {place.area}
           </div>
 
           <h2 className="h-[64px] overflow-hidden text-[31px] font-semibold leading-[0.98] tracking-[-0.065em] text-black">

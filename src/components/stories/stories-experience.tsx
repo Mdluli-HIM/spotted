@@ -13,6 +13,7 @@ import { StoryCollection } from "@/components/stories/story-collection";
 import { StoryFilter } from "@/components/stories/story-filter";
 import { StoryShowcase } from "@/components/stories/story-showcase";
 import { StoryViewer } from "@/components/stories/story-viewer";
+import { AppMenu } from "@/components/navigation/app-menu";
 
 export function StoriesExperience() {
   const searchParams = useSearchParams();
@@ -28,6 +29,7 @@ export function StoriesExperience() {
   const [activeFilter, setActiveFilter] = useState("For you");
   const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
   const [viewerOpen, setViewerOpen] = useState(Boolean(highlightedStoryId));
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const visibleStories = useMemo(() => {
     if (activeFilter === "For you" || activeFilter === "Nearby") {
@@ -128,7 +130,12 @@ export function StoriesExperience() {
             <Search size={17} />
           </button>
 
-          <button className="flex size-11 items-center justify-center rounded-full bg-[#f4f4f2]">
+          <button
+            type="button"
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
+            className="flex size-11 items-center justify-center rounded-full bg-[#f4f4f2]"
+          >
             <Menu size={18} />
           </button>
         </div>
@@ -186,6 +193,8 @@ export function StoriesExperience() {
         onNext={nextStory}
         onPrevious={previousStory}
       />
+
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );
 }
