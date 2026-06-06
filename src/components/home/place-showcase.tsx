@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
-import { places } from "@/data/places";
 import { filterPlaces } from "@/lib/filter-places";
 import type { Place } from "@/types/place";
 
@@ -12,6 +11,7 @@ import { EmptyDiscoveryState } from "@/components/home/empty-discovery-state";
 import { PlaceCategoryRow } from "@/components/home/place-category-row";
 
 type PlaceShowcaseProps = {
+  places: Place[];
   searchQuery: string;
   savedPlaceIds: string[];
   onToggleSavedPlace: (placeId: string) => void;
@@ -64,6 +64,7 @@ const categorySections: CategorySection[] = [
 ];
 
 export function PlaceShowcase({
+  places,
   searchQuery,
   savedPlaceIds,
   onToggleSavedPlace,
@@ -81,7 +82,7 @@ export function PlaceShowcase({
         mood: activeMood,
         area: activeArea,
       }),
-    [searchQuery, activeMood, activeArea],
+    [places, searchQuery, activeMood, activeArea],
   );
 
   const visibleSections = useMemo(() => {

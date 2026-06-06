@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 
-import { PlaceExperience } from "@/components/place/place-experience";
+import { PlacePageResolver } from "@/components/place/place-page-resolver";
 import { places } from "@/data/places";
+import { siteConfig } from "@/lib/site";
 
 type PlacePageProps = {
   params: Promise<{
@@ -15,35 +16,57 @@ export function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: PlacePageProps) {
+export async function generateMetadata({
+  params,
+}: PlacePageProps): Promise<Metadata> {
   const { placeId } = await params;
   const place = places.find((item) => item.id === placeId);
 
   if (!place) {
     return {
-      title: "Place not found — SPOTTED",
+      title: "Community place — SPOTTED",
+      description: "A community-added place on SPOTTED.",
     };
   }
+
+  const pageUrl = `${siteConfig.url}/places/${place.id}`;
 
   return {
     title: `${place.name} — SPOTTED`,
     description: place.description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title: `${place.name} — SPOTTED`,
+      description: place.description,
+      url: pageUrl,
+      siteName: "SPOTTED",
+      type: "website",
+      images: [
+        {
+          url: place.image,
+          alt: place.name,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${place.name} — SPOTTED`,
+      description: place.description,
+      images: [place.image],
+    },
   };
 }
 
 export default async function PlacePage({ params }: PlacePageProps) {
   const { placeId } = await params;
-  const place = places.find((item) => item.id === placeId);
-
-  if (!place) {
-    notFound();
-  }
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-[#fcfcfb]">
-      <section className="min-h-screen w-full overflow-x-hidden bg-[#fcfcfb] px-4 py-4 sm:px-8 sm:py-7 lg:px-16 lg:py-9 xl:px-20">
-        <PlaceExperience place={place} />
-      </section>
+    <main className="min-h-dvh w-full overflow-x-hidden bg-white">
+      <div className="min-h-dvh w-full bg-white px-4 py-4 sm:px-8 sm:py-7 lg:px-16 lg:py-9 xl:px-20">
+        <PlacePageResolver placeId={placeId} />
+      </div>
     </main>
   );
 }

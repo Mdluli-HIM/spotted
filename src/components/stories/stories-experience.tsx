@@ -2,64 +2,92 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, Menu, Search } from "lucide-react";
-import { BrandWordmark } from "@/components/brand/brand-wordmark";
 
-import { stories } from "@/data/stories";
+import { stories as baseStories } from "@/data/stories";
+import { useCommunityStories } from "@/hooks/use-community-stories";
+
+import { BrandWordmark } from "@/components/brand/brand-wordmark";
 import { StoryCollection } from "@/components/stories/story-collection";
 import { StoryFilter } from "@/components/stories/story-filter";
 import { StoryShowcase } from "@/components/stories/story-showcase";
 import { StoryViewer } from "@/components/stories/story-viewer";
 
 export function StoriesExperience() {
+  const searchParams = useSearchParams();
+  const highlightedStoryId = searchParams.get("story");
+
+  const { communityStories } = useCommunityStories();
+
+  const allStories = useMemo(
+    () => [...communityStories, ...baseStories],
+    [communityStories],
+  );
+
   const [activeFilter, setActiveFilter] = useState("For you");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedStoryId, setSelectedStoryId] = useState<string | null>(null);
+  const [viewerOpen, setViewerOpen] = useState(Boolean(highlightedStoryId));
 
   const visibleStories = useMemo(() => {
     if (activeFilter === "For you" || activeFilter === "Nearby") {
-      return stories;
+      return allStories;
     }
 
-    return stories.filter((story) =>
+    return allStories.filter((story) =>
       story.moods.some(
         (mood) => mood.toLowerCase() === activeFilter.toLowerCase(),
       ),
     );
-  }, [activeFilter]);
+  }, [activeFilter, allStories]);
 
-  const safeStories = visibleStories.length > 0 ? visibleStories : stories;
-  const activeStory = safeStories[activeIndex] ?? safeStories[0];
+  const safeStories = visibleStories.length > 0 ? visibleStories : allStories;
+
+  const resolvedStoryId =
+    selectedStoryId ?? highlightedStoryId ?? safeStories[0]?.id ?? "";
+
+  const resolvedIndex = safeStories.findIndex(
+    (story) => story.id === resolvedStoryId,
+  );
+
+  const activeIndex = resolvedIndex >= 0 ? resolvedIndex : 0;
+  const activeStory = safeStories[activeIndex] ?? safeStories[0] ?? null;
 
   function changeFilter(filter: string) {
     setActiveFilter(filter);
-    setActiveIndex(0);
+    setSelectedStoryId(null);
   }
 
-  function selectStory(storyId: string) {
-    const index = safeStories.findIndex((story) => story.id === storyId);
+  function changeActiveIndex(index: number) {
+    const story = safeStories[index];
 
-    if (index >= 0) {
-      setActiveIndex(index);
-      setViewerOpen(true);
+    if (story) {
+      setSelectedStoryId(story.id);
     }
   }
 
+  function selectStory(storyId: string) {
+    setSelectedStoryId(storyId);
+    setViewerOpen(true);
+  }
+
   function nextStory() {
-    setActiveIndex((current) =>
-      current === safeStories.length - 1 ? 0 : current + 1,
-    );
+    const nextIndex =
+      activeIndex === safeStories.length - 1 ? 0 : activeIndex + 1;
+
+    changeActiveIndex(nextIndex);
   }
 
   function previousStory() {
-    setActiveIndex((current) =>
-      current === 0 ? safeStories.length - 1 : current - 1,
-    );
+    const previousIndex =
+      activeIndex === 0 ? safeStories.length - 1 : activeIndex - 1;
+
+    changeActiveIndex(previousIndex);
   }
 
   return (
     <>
-      <header className="sticky top-0 z-40 -mx-5 flex items-center justify-between bg-[#fcfcfb]/92 px-5 py-3 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+      <header className="sticky top-0 z-40 -mx-4 flex items-center justify-between bg-white/95 px-4 py-4 backdrop-blur-xl sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
         <div className="flex items-center gap-4">
           <BrandWordmark />
 
@@ -79,19 +107,22 @@ export function StoriesExperience() {
             </Link>
 
             <Link
-              href="/"
+              href="/saved"
               className="rounded-full px-4 py-2 text-[12px] font-medium text-[#555550] hover:text-black"
             >
-              Lists
+              Saved
             </Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-2">
-          <button className="hidden rounded-full bg-[#f4f4f2] px-5 py-3 text-[12px] font-semibold text-black sm:flex">
+          <Link
+            href="/contribute/story"
+            className="hidden rounded-full bg-[#f4f4f2] px-5 py-3 text-[12px] font-semibold text-black sm:flex"
+          >
             Create story
             <ArrowUpRight size={14} className="ml-2" />
-          </button>
+          </Link>
 
           <button className="flex size-11 items-center justify-center rounded-full bg-[#f4f4f2]">
             <Search size={17} />
@@ -127,21 +158,21 @@ export function StoriesExperience() {
         <StoryShowcase
           stories={safeStories}
           activeIndex={activeIndex}
-          onActiveIndexChange={setActiveIndex}
+          onActiveIndexChange={changeActiveIndex}
           onOpenViewer={() => setViewerOpen(true)}
         />
 
         <StoryCollection
           title="Trending around campus"
           description="Stories students are saving, sharing and using before they decide where to go."
-          stories={stories}
+          stories={allStories}
           onSelectStory={selectStory}
         />
 
         <StoryCollection
           title="Good places for the weekend"
           description="Quick visual recommendations for food, music, dates and slow afternoons."
-          stories={[...stories].reverse()}
+          stories={[...allStories].reverse()}
           onSelectStory={selectStory}
         />
       </main>

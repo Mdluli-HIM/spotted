@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 
 import { getPlacePalette } from "@/lib/place-palette";
 import type { Place } from "@/types/place";
+import { ShareButton } from "@/components/sharing/share-button";
+import { buildPlaceShareTarget } from "@/lib/share-links";
 
 type PlaceCardProps = {
   place: Place;
@@ -69,26 +71,34 @@ export function PlaceCard({
             ))}
           </div>
 
-          <button
-            type="button"
-            aria-label={saved ? "Remove saved place" : "Save place"}
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleSaved();
-            }}
-            className={`flex size-9 shrink-0 items-center justify-center rounded-full transition-all ${
-              saved || active
-                ? "bg-black text-white"
-                : "text-black/60 hover:bg-black hover:text-white"
-            }`}
-            style={
-              saved || active
-                ? undefined
-                : { backgroundColor: palette.accentSoft }
-            }
-          >
-            <Heart size={15} fill={saved ? "currentColor" : "none"} />
-          </button>
+          <div className="flex shrink-0 items-center gap-2">
+            <ShareButton
+              target={buildPlaceShareTarget(place)}
+              iconOnly
+              className="flex size-9 items-center justify-center rounded-full bg-white/75 text-black transition-colors hover:bg-white"
+            />
+
+            <button
+              type="button"
+              aria-label={saved ? "Remove saved place" : "Save place"}
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleSaved();
+              }}
+              className={`flex size-9 items-center justify-center rounded-full transition-all ${
+                saved || active
+                  ? "bg-black text-white"
+                  : "text-black/60 hover:bg-black hover:text-white"
+              }`}
+              style={
+                saved || active
+                  ? undefined
+                  : { backgroundColor: palette.accentSoft }
+              }
+            >
+              <Heart size={15} fill={saved ? "currentColor" : "none"} />
+            </button>
+          </div>
         </div>
 
         <div>

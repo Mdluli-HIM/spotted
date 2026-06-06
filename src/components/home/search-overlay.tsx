@@ -4,13 +4,12 @@ import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, MapPin, MapPinOff, Search, X } from "lucide-react";
 
-import { places } from "@/data/places";
+import { getPlacePalette } from "@/lib/place-palette";
 import { filterPlaces } from "@/lib/filter-places";
 import type { Place } from "@/types/place";
 
-import { getPlacePalette } from "@/lib/place-palette";
-
 type SearchOverlayProps = {
+  places: Place[];
   open: boolean;
   query: string;
   onQueryChange: (query: string) => void;
@@ -28,6 +27,7 @@ const suggestedSearches = [
 ];
 
 export function SearchOverlay({
+  places,
   open,
   query,
   onQueryChange,

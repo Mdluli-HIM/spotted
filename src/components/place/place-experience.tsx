@@ -3,12 +3,14 @@
 import { useMemo, useState } from "react";
 
 import { places } from "@/data/places";
-import { stories } from "@/data/stories";
+import { stories as baseStories } from "@/data/stories";
+import { useCommunityStories } from "@/hooks/use-community-stories";
 import { useSavedPlaces } from "@/hooks/use-saved-places";
 import { useVisitedPlaces } from "@/hooks/use-visited-places";
 import { getSimilarPlaces } from "@/lib/place-recommendations";
 import type { Place } from "@/types/place";
 
+import { AppMenu } from "@/components/navigation/app-menu";
 import { ImageViewer } from "@/components/place/image-viewer";
 import { MoodBreakdown } from "@/components/place/mood-breakdown";
 import { PlaceGallery } from "@/components/place/place-gallery";
@@ -28,13 +30,18 @@ export function PlaceExperience({ place }: PlaceExperienceProps) {
   const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
   const [activeStoryIndex, setActiveStoryIndex] = useState(0);
   const [storyViewerOpen, setStoryViewerOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
+  const { communityStories } = useCommunityStories();
   const { savedPlaceIds, toggleSavedPlace } = useSavedPlaces();
   const { visitedPlaceIds, toggleVisitedPlace } = useVisitedPlaces();
 
   const placeStories = useMemo(
-    () => stories.filter((story) => story.placeId === place.id),
-    [place.id],
+    () =>
+      [...communityStories, ...baseStories].filter(
+        (story) => story.placeId === place.id,
+      ),
+    [communityStories, place.id],
   );
 
   const similarPlaces = useMemo(() => getSimilarPlaces(place, places), [place]);
@@ -65,27 +72,13 @@ export function PlaceExperience({ place }: PlaceExperienceProps) {
     );
   }
 
-  async function sharePlace() {
-    const shareData = {
-      title: place.name,
-      text: `Check out ${place.name} on SPOTTED.`,
-      url: window.location.href,
-    };
-
-    if (navigator.share) {
-      await navigator.share(shareData);
-      return;
-    }
-
-    await navigator.clipboard.writeText(window.location.href);
-  }
-
   return (
     <>
       <PlaceHeader
+        place={place}
         saved={saved}
         onToggleSaved={() => toggleSavedPlace(place.id)}
-        onShare={sharePlace}
+        onOpenMenu={() => setMenuOpen(true)}
       />
 
       <PlaceHero
@@ -127,6 +120,8 @@ export function PlaceExperience({ place }: PlaceExperienceProps) {
         onNext={nextStory}
         onPrevious={previousStory}
       />
+
+      <AppMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </>
   );
 }
